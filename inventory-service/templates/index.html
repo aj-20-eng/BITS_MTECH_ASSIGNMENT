@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StockPilot | Inventory</title>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#68758a;--line:#e7ecf3;--blue:#315efb;--green:#12805c;--red:#c03945;--amber:#a66a09}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{background:#111a2e;color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:20px;font-weight:750;letter-spacing:.2px}.brand span{color:#8fa8ff}.sub{color:#aebbd1;font-size:12px}
+main{max-width:1200px;margin:28px auto;padding:0 20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.top h1{font-size:25px;margin:0}.top p{color:var(--muted);margin:4px 0 0}
+.btn{border:0;border-radius:8px;padding:10px 15px;background:var(--blue);color:white;font-weight:650;cursor:pointer}.btn.secondary{background:#eaf0ff;color:#2449cb}.btn.dark{background:#26344e}.btn:disabled{opacity:.55;cursor:not-allowed}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:0 3px 12px rgba(18,34,64,.035)}
+.card{padding:17px}.label{color:var(--muted);font-size:12px;font-weight:650}.value{font-size:27px;font-weight:750;margin-top:5px}.hint{font-size:11px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}.panel{padding:18px;margin-bottom:16px}.panel h2{font-size:16px;margin:0 0 14px}
+.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+input,select{width:100%;border:1px solid #dbe2ec;border-radius:8px;padding:10px 11px;font:inherit;background:white;color:var(--ink)}
+.search{max-width:260px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formgrid .full{grid-column:1/-1}
+label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin:0 0 5px}
+table{width:100%;border-collapse:collapse;white-space:nowrap}th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;border-bottom:1px solid var(--line)}
+td{padding:12px 8px;border-bottom:1px solid #eff2f6;font-size:13px}tr:last-child td{border-bottom:0}
+.pill{display:inline-block;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:750}.in{background:#e5f6ef;color:var(--green)}.low{background:#fff2d8;color:var(--amber)}.out{background:#fde9eb;color:var(--red)}
+.notice{padding:10px 12px;border-radius:8px;margin:10px 0;display:none}.notice.ok{display:block;background:#e7f7ef;color:#116b4c}.notice.err{display:block;background:#fff0f0;color:#a52832}
+.tablewrap{overflow:auto}.muted{color:var(--muted)}.movement{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.movement:last-child{border:0}.plus{color:var(--green);font-weight:700}.minus{color:var(--red);font-weight:700}
+@media(max-width:850px){.cards{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}
+@media(max-width:520px){header{padding:15px}.cards{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">Stock<span>Pilot</span></div><div class="sub">Inventory Management System · MVP</div></div><div class="sub">Warehouse Operations</div></header>
+<main>
+  <div class="top"><div><h1>Inventory Overview</h1><p>Monitor products, stock levels and warehouse movements.</p></div><button class="btn" onclick="loadInventory()">↻ Refresh data</button></div>
+  <div class="cards">
+    <div class="card"><div class="label">TOTAL PRODUCTS</div><div class="value" id="totalProducts">—</div><div class="hint">Registered SKUs</div></div>
+    <div class="card"><div class="label">TOTAL UNITS</div><div class="value" id="totalUnits">—</div><div class="hint">Available stock quantity</div></div>
+    <div class="card"><div class="label">LOW STOCK</div><div class="value" id="lowStock">—</div><div class="hint">10 units or fewer</div></div>
+    <div class="card"><div class="label">OUT OF STOCK</div><div class="value" id="outStock">—</div><div class="hint">Zero available units</div></div>
+  </div>
+  <div class="layout">
+    <section class="panel">
+      <div class="toolbar"><h2>Product Inventory</h2><input id="search" class="search" placeholder="Search SKU or product..." oninput="renderTable()"></div>
+      <div class="tablewrap"><table><thead><tr><th>SKU</th><th>Product</th><th>Unit price</th><th>Available</th><th>Status</th></tr></thead><tbody id="inventoryRows"><tr><td colspan="5" class="muted">Loading inventory...</td></tr></tbody></table></div>
+      <div id="inventoryNotice" class="notice"></div>
+    </section>
+    <section>
+      <div class="panel">
+        <h2>Add Product</h2>
+        <form id="productForm" class="formgrid">
+          <div><label>SKU</label><input name="sku" required placeholder="SKU-003"></div>
+          <div><label>Product name</label><input name="name" required placeholder="Safety gloves"></div>
+          <div><label>Unit price</label><input name="unit_price" type="number" min="0" step="0.01" value="0" required></div>
+          <div><label>Description</label><input name="description" placeholder="Optional"></div>
+          <div class="full"><button class="btn" type="submit">＋ Create product</button></div>
+        </form><div id="productNotice" class="notice"></div>
+      </div>
+      <div class="panel">
+        <h2>Receive Stock</h2>
+        <form id="receiveForm" class="formgrid">
+          <div class="full"><label>Product</label><select name="product_id" class="productSelect" required></select></div>
+          <div class="full"><label>Quantity to receive</label><input name="quantity" type="number" min="1" step="1" required placeholder="e.g. 50"></div>
+          <div class="full"><button class="btn" type="submit">＋ Receive stock</button></div>
+        </form><div id="receiveNotice" class="notice"></div>
+      </div>
+      <div class="panel">
+        <h2>Issue Stock</h2>
+        <form id="issueForm" class="formgrid">
+          <div class="full"><label>Product</label><select name="product_id" class="productSelect" required></select></div>
+          <div class="full"><label>Quantity to issue</label><input name="quantity" type="number" min="1" step="1" required placeholder="e.g. 5"></div>
+          <div class="full"><button class="btn dark" type="submit">− Issue stock</button></div>
+        </form><div id="issueNotice" class="notice"></div>
+      </div>
+      <div class="panel"><div class="toolbar"><h2>Recent Stock Movements</h2><button class="btn secondary" onclick="loadMovements()">Refresh</button></div><div id="movements"><span class="muted">Select a product in the inventory table to view movements.</span></div></div>
+    </section>
+  </div>
+</main>
+<script>
+let inventoryItems=[];
+function showNotice(id,msg,ok=false){const el=document.getElementById(id);el.textContent=msg;el.className='notice '+(ok?'ok':'err');}
+async function api(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...options});const data=await r.json().catch(()=>({error:'Invalid server response'}));if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);return data;}
+function statusPill(status){if(status==='IN_STOCK')return '<span class="pill in">IN STOCK</span>';if(status==='LOW_STOCK')return '<span class="pill low">LOW STOCK</span>';return '<span class="pill out">OUT OF STOCK</span>';}
+function renderTable(){const q=document.getElementById('search').value.toLowerCase();const rows=inventoryItems.filter(x=>(x.sku+' '+x.name).toLowerCase().includes(q));const body=document.getElementById('inventoryRows');if(!rows.length){body.innerHTML='<tr><td colspan="5" class="muted">No matching products.</td></tr>';return;}body.innerHTML=rows.map(x=>`<tr onclick="loadMovements(${x.id})" style="cursor:pointer"><td><b>${x.sku}</b></td><td>${x.name}</td><td>${Number(x.unit_price).toFixed(2)}</td><td><b>${x.quantity}</b></td><td>${statusPill(x.stock_status)}</td></tr>`).join('');}
+function fillProductSelects(){document.querySelectorAll('.productSelect').forEach(s=>{const old=s.value;s.innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${x.sku} – ${x.name} (Qty: ${x.quantity})</option>`).join('');if(old)s.value=old;});}
+async function loadInventory(){try{const d=await api('/api/inventory');inventoryItems=d.items;document.getElementById('totalProducts').textContent=d.total_products;document.getElementById('totalUnits').textContent=d.total_units;document.getElementById('lowStock').textContent=d.low_stock_count;document.getElementById('outStock').textContent=d.out_of_stock_count;renderTable();fillProductSelects();}catch(e){showNotice('inventoryNotice',e.message);}}
+document.getElementById('productForm').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);const payload=Object.fromEntries(f.entries());payload.unit_price=Number(payload.unit_price);try{const d=await api('/api/products',{method:'POST',body:JSON.stringify(payload)});showNotice('productNotice',`Created ${d.sku} (Product ID: ${d.id})`,true);e.target.reset();await loadInventory();}catch(err){showNotice('productNotice',err.message);}});
+async function stockAction(e,path,noticeId){e.preventDefault();const f=new FormData(e.target);const payload={product_id:Number(f.get('product_id')),quantity:Number(f.get('quantity'))};try{const d=await api(path,{method:'POST',body:JSON.stringify(payload)});showNotice(noticeId,`${d.message}. Current quantity: ${d.stock.quantity}`,true);e.target.reset();await loadInventory();await loadMovements(payload.product_id);}catch(err){showNotice(noticeId,err.message);}}
+document.getElementById('receiveForm').addEventListener('submit',e=>stockAction(e,'/stock/receive','receiveNotice'));
+document.getElementById('issueForm').addEventListener('submit',e=>stockAction(e,'/stock/issue','issueNotice'));
+async function loadMovements(id){if(!id){const selected=document.querySelector('.productSelect').value;id=Number(selected);}if(!id)return;try{const rows=await api(`/movements/${id}`);document.getElementById('movements').innerHTML=rows.length?rows.slice(0,8).map(x=>`<div class="movement"><span><b>${x.movement_type}</b><br><small class="muted">${x.created_at}</small></span><span class="${x.movement_type==='RECEIVE'?'plus':'minus'}">${x.movement_type==='RECEIVE'?'+':'−'}${x.quantity}</span></div>`).join(''):'<span class="muted">No movements yet.</span>';}catch(e){document.getElementById('movements').textContent=e.message;}}
+loadInventory();
+</script>
+</body></html>

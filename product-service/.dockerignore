@@ -1,0 +1,11 @@
+cd C:\LAB_CODE\3rdsem\scalable\product-service
+
+@'
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.db
+.env
+.git/
+'@ | Set-Content .dockerignore

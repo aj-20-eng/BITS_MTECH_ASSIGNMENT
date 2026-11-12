@@ -1,0 +1,11 @@
+cd ..\inventory-service
+
+@'
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.db
+.env
+.git/
+'@ | Set-Content .dockerignore
